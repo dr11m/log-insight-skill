@@ -1,6 +1,7 @@
 ## Оглавление
 
-- 📍 [v2-chunk-cross-analysis](#v2-chunk-cross-analysis) — тестируется | 2026-03-16
+- 📍 [v3-model-analytics](#v3-model-analytics) — тестируется | 2026-03-16
+- [v2-chunk-cross-analysis](#v2-chunk-cross-analysis) — устарел | 2026-03-16
 - [v1-parallel-orchestrator](#v1-parallel-orchestrator) — устарел | 2026-03-15
 
 ---
@@ -9,7 +10,7 @@
 
 ```mermaid
 graph LR
-    v1["v1-parallel-orchestrator<br/>устарел"]:::superseded --> v2["v2-chunk-cross-analysis<br/>📍 тестируется"]:::current
+    v1["v1-parallel-orchestrator<br/>устарел"]:::superseded --> v2["v2-chunk-cross-analysis<br/>устарел"]:::superseded --> v3["v3-model-analytics<br/>📍 тестируется"]:::current
 
     classDef current fill:#2d6a4f,color:#fff,stroke:#1b4332
     classDef stable fill:#1d3557,color:#fff,stroke:#0d1b2a
@@ -17,13 +18,54 @@ graph LR
     classDef abandoned fill:#7f1d1d,color:#fca5a5,stroke:#450a0a
 ```
 
-`main` ← `v2-chunk-cross-analysis` ← `v1-parallel-orchestrator`
+`main` ← `v3-model-analytics` ← `v2-chunk-cross-analysis` ← `v1-parallel-orchestrator`
 
 ---
 
-# v2-chunk-cross-analysis ← ТЕКУЩАЯ
+# v3-model-analytics ← ТЕКУЩАЯ
 
 **Статус:** `тестируется`
+**Родитель:** [v2-chunk-cross-analysis](#v2-chunk-cross-analysis)
+**Ветка:** `v3-model-analytics`
+**Дата:** 2026-03-16
+
+## Изменения
+
+- Исправление P8: `== CROSS-CHUNK ROLE ==` перемещён **перед** `== PROJECT CONTEXT ==` — модель теперь читает роль до начала анализа
+- Встроен обязательный формат счётчиков в каждый пункт `== ANALYSIS CHECKLIST ==`: `Pattern | N× | first_ts → last_ts`
+- Добавлен `== OUTPUT COMPLETENESS CHECK ==` с чекбоксами вместо comment-style `### Cross-Chunk Signals` — блокирующая проверка перед отправкой ответа
+- Добавлен fallback в Phase 4 Step 3: если субагент не вернул `### Cross-Chunk Signals` — оркестратор явно помечает чанк как `⚠️ метрики недоступны` вместо молчаливого пропуска
+
+## Прогоны
+
+| # | Модель | Проект | N | Результат | Команд | Примечания |
+|---|--------|--------|---|-----------|--------|------------|
+| 1 | sonnet | Проект A | — | ✅ УСПЕХ | 50 | идеально отработал согласно инструкции |
+| 2 | copilot-sonnet-4.6 | Проект B | — | ✅ УСПЕХ | 100 | результат почти идеальный; пара вызовов внутри нескольких субагентов |
+| 3 | copilot-gpt-5-mini | Проект A | — | ⚠️ ЧАСТИЧНО | 70 | проблема с нарезкой логов на чанки; чанки получились очень маленькие |
+| 4 | haiku | Проект B | — | ✅ УСПЕХ | 40 | идеально отработал |
+
+## Проблемы
+
+| ID | Run# | Модель | Описание | Статус |
+|----|------|--------|----------|--------|
+| P10 | 3 | copilot-gpt-5-mini | Чанки при нарезке логов получились очень маленькие — модель не применила логику TARGET_CHUNK_BYTES корректно | 🔴 открыта |
+
+## Исправленные проблемы
+
+| P-ID | Описание | Исправлено в Run# |
+|------|----------|-------------------|
+| — | — | — |
+
+## Решение по слиянию
+
+- [ ] В процессе тестирования
+
+---
+
+# v2-chunk-cross-analysis
+
+**Статус:** `устарел`
 **Родитель:** [v1-parallel-orchestrator](#v1-parallel-orchestrator)
 **Ветка:** `v2-chunk-cross-analysis`
 **Дата:** 2026-03-16
@@ -60,7 +102,7 @@ graph LR
 
 ## Решение по слиянию
 
-- [ ] В процессе тестирования
+- [x] Завершена — заменена версией v3-model-analytics
 
 ---
 
@@ -102,6 +144,12 @@ graph LR
 | P5 | 7 | copilot-sonnet-4.6 | `TARGET_CHUNK_BYTES = 500_000` слишком мал для плотных JSON-логов (~272 байт/строку): каждый субагент получает ~1840 строк вместо ~7350, покрытие файла ~2.8% при N=10 | 🔴 открыта |
 | P6 | 7 | copilot-sonnet-4.6 | Субагенты используют десятки вызовов инструментов вместо разрешённых 2 (прямое нарушение бюджета tool executions) | 🔴 открыта |
 | P7 | — | — | Ключевая идея чанков (сравнение одинаковых данных из разных чанков, поиск трендов и аномалий по временным срезам) слабо отражена в промпте скила — субагенты не знают, что должны сопоставлять чанки между собой | 🔴 открыта |
+
+## Исправленные проблемы
+
+| P-ID | Описание | Исправлено в Run# |
+|------|----------|-------------------|
+| — | — | — |
 
 ## Решение по слиянию
 

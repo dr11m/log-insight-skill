@@ -195,14 +195,6 @@ That is 100% of everything you need. Analyze from memory only.
 If you feel the urge to call a tool to "verify" or "get more context" — SUPPRESS IT.
 The PROJECT_BRIEFING is your context. The log chunk is your data. Nothing else exists.
 
-== PROJECT CONTEXT ==
-
-The following is documentation for the project that produces these logs. Use it to understand expected behavior, business rules, and system architecture. Compare the logs against this context to find violations.
-
---- PROJECT DOCS START ---
-{PROJECT_BRIEFING}
---- PROJECT DOCS END ---
-
 == CROSS-CHUNK ROLE ==
 
 You are analyzing chunk {CHUNK_NUMBER} of {TOTAL_CHUNKS}.
@@ -212,53 +204,78 @@ Your results will be COMPARED with all other chunks to detect trends over time.
 The orchestrator will build a metric timeline across all chunks — so your job is not just to find problems,
 but to QUANTIFY them precisely so trends can be computed.
 
-For EVERY finding you report:
-- State exactly how many times it occurs in your chunk (count)
-- State the first and last occurrence timestamps
-- If it involves a numeric value (latency, duration, queue size), report the min/max/typical value
+**MANDATORY for EVERY finding you report:**
+- Count: exactly how many times it occurs in your chunk
+- Timestamps: first and last occurrence (copy from log)
+- If numeric value (latency, duration, queue size): min/max/typical
 
-This is what enables statements like:
-  "Error X: 3× in chunk 2, 8× in chunk 5, 21× in chunk 9 → worsening trend"
-  "Timeout Y: 12× in chunk 1, 5× in chunk 5, 1× in chunk 9 → improving trend"
+Example output format:
+  `AttributeError: disable | 14× | 09:01:03 → 09:58:41`
+  `ConnectionTimeout | 3× | 10:15:22 → 10:47:09 | max 5200ms`
 
-Without exact counts per chunk, cross-chunk trend detection is impossible.
+Without exact counts and timestamps, cross-chunk trend detection is impossible.
+A finding reported as "multiple occurrences" is USELESS for trend analysis.
+
+== PROJECT CONTEXT ==
+
+The following is documentation for the project that produces these logs. Use it to understand expected behavior, business rules, and system architecture. Compare the logs against this context to find violations.
+
+--- PROJECT DOCS START ---
+{PROJECT_BRIEFING}
+--- PROJECT DOCS END ---
 
 == ANALYSIS CHECKLIST ==
 
-Go through EVERY category below. For each, report what you find. If a category has zero findings, skip it entirely.
+Go through EVERY category below. For each finding, you MUST report:
+  → `Pattern name | count× | first_timestamp → last_timestamp`
+  → For numeric values: also add `| min/max/typical value`
+
+If a category has zero findings, skip it entirely.
 
 **A. ERRORS AND EXCEPTIONS**
 - Find all ERROR, CRITICAL, Exception, Traceback entries
 - Group by error type or message pattern (do not list every identical occurrence — aggregate)
-- Classify each pattern: TRANSIENT (1-2 occurrences) or PERSISTENT (3+ occurrences)
+- For EACH pattern report: `ErrorType | N× | HH:MM:SS → HH:MM:SS`
+- Classify: TRANSIENT (1-2 occurrences) or PERSISTENT (3+ occurrences)
 - For persistent errors: hypothesize root cause based on the pattern and project context
 - Extract key stack trace lines if present
 
 **B. WARNINGS AND DEGRADATION**
 - Retry storms: same retry message repeating rapidly (>3 times in 60 seconds)
+  → Report: `RetryPattern | N× | HH:MM:SS → HH:MM:SS`
 - Timeout clusters: multiple timeouts in a short window
+  → Report: `TimeoutType | N× | HH:MM:SS → HH:MM:SS | max Nms`
 - Resource pressure: memory warnings, connection pool exhaustion, disk space, queue backlog
+  → Report: `ResourceType | N× | HH:MM:SS → HH:MM:SS | peak value`
 - Slow operations: latency or duration values that seem abnormally high
+  → Report: `OperationType | N× | HH:MM:SS → HH:MM:SS | min/max/avg ms`
 
 **C. LOGIC AND FLOW INTEGRITY**
 - Expected sequences: do start markers have matching end markers? Any orphaned operations?
+  → Report: `OrphanedOp | N× | HH:MM:SS → HH:MM:SS`
 - Out-of-order events: things happening in unexpected sequence per the documented workflow
 - Business rule violations: logged values or decisions that contradict the rules in PROJECT CONTEXT
+  → Report: `ViolationType | N× | HH:MM:SS → HH:MM:SS`
 - Data inconsistencies: counters that don't add up, contradictory log messages
 
 **D. TIMING AND VOLUME ANOMALIES**
 - Timestamp gaps > 60 seconds between consecutive log entries (potential stall or restart)
+  → Report: `GapEvent | N× | gap start → gap end | Nsec gap`
 - Sudden volume spikes (>3x normal logging rate) or silences (no entries for extended period)
 - Iteration or cycle duration anomalies (some cycles taking much longer than others)
+  → Report: `SlowCycle | N× | HH:MM:SS → HH:MM:SS | max Nms`
 
 **E. DOCUMENTATION AND RULE VIOLATIONS**
 - Compare logged behavior against business rules from PROJECT CONTEXT
 - Flag any logged values that violate documented thresholds, limits, or constraints
+  → Report: `RuleViolation | N× | HH:MM:SS → HH:MM:SS`
 - Note decisions logged that seem inconsistent with documented logic or workflow
 
 **F. EXTERNAL DEPENDENCIES**
 - Connection failures to databases, caches, message queues, external APIs
+  → Report: `ServiceName connection failure | N× | HH:MM:SS → HH:MM:SS`
 - Timeout patterns targeting specific endpoints or services
+  → Report: `ServiceName timeout | N× | HH:MM:SS → HH:MM:SS | max Nms`
 - Rate limiting, 429/503 responses, circuit breaker activations
 - Certificate, TLS, or DNS errors
 
@@ -294,7 +311,6 @@ For each low finding:
 - Key components active: [list of modules/services seen in logs]
 
 ### Cross-Chunk Signals
-<!-- Structured metrics for trend detection across chunks. Always include this section. -->
 - errors_total: [count of ERROR/CRITICAL lines]
 - warnings_total: [count of WARNING lines]
 - [error_pattern_name]: [count] occurrences (e.g. "ConnectionError: 14 occurrences")
@@ -306,6 +322,18 @@ For each low finding:
 If the chunk is completely healthy, write:
 "Chunk is healthy. No significant issues detected."
 Then provide statistics and Cross-Chunk Signals only.
+
+== OUTPUT COMPLETENESS CHECK ==
+
+Before submitting your response, verify each item:
+☐ Every finding includes a count (e.g. "14×", NOT "multiple occurrences" or "several times")
+☐ Every finding includes first AND last timestamp copied from the log
+☐ Section `### Cross-Chunk Signals` is present in your response
+☐ `errors_total` is filled with a number (0 is valid — write `errors_total: 0`)
+☐ `warnings_total` is filled with a number (0 is valid — write `warnings_total: 0`)
+
+If ANY checkbox above is unchecked — go back and complete the missing data before submitting.
+An incomplete response breaks trend detection for ALL {TOTAL_CHUNKS} chunks, not just yours.
 ```
 
 **CRITICAL RULES FOR PHASE 3:**
@@ -332,7 +360,14 @@ Same root cause across multiple chunks = ONE entry in the report:
 
 ### Step 3: Detect Trends
 
-First, extract all `### Cross-Chunk Signals` sections from sub-agent responses and build a metric timeline table:
+First, extract all `### Cross-Chunk Signals` sections from sub-agent responses.
+
+**If a sub-agent response does NOT contain `### Cross-Chunk Signals`:**
+- Mark that chunk as `⚠️ метрики недоступны` in the trend table
+- Add note below the table: `⚠️ Чанк {N}: субагент не вернул структурированные метрики — данные тренда неполные`
+- Still build the trend table for chunks that DID provide metrics
+
+Then build a metric timeline table:
 
 | Metric | Chunk 1 | Chunk 2 | ... | Chunk N |
 |--------|---------|---------|-----|---------|
