@@ -12,6 +12,8 @@
 
 > Идея эволюционировала из моей первой реализации [llm-log-analyzer](https://github.com/dr11m/llm-log-analyzer) — Python-скрипта, который использовал LLM для анализа логов. Скил переносит эту идею в Claude Code/Copilot, добавляя параллелизацию через субагентов и кросс-чанковый анализ трендов.
 
+> Скил использует индуктивный подход. Сравнение с дедуктивным [log-validate](https://github.com/dr11m/log-validate-skill): log-insight читает лог целиком агентами, log-validate строит карту из кода и проверяет через grep.
+
 ## Что делает скил
 
 Скил анализирует лог-файлы любого размера, разбивая их на чанки и распределяя анализ между несколькими параллельными агентами. Каждый агент анализирует свой чанк, после чего оркестратор собирает результаты, выявляет тренды и аномалии между чанками, и формирует итоговый отчёт.
@@ -32,13 +34,6 @@
 - Обязательный формат вывода с точными счётчиками и временными метками
 - Сбор метрик между чанками для выявления трендов (ухудшение/улучшение)
 - Проверка полноты вывода перед отправкой результата
-
-> Скил использует индуктивный подход. Сравнение с дедуктивным [log-validate](https://github.com/dr11m/log-validate-skill): log-insight читает лог целиком агентами, log-validate строит карту из кода и проверяет через grep.
-
-## Related Projects
-
-- [llm-log-analyzer](https://github.com/dr11m/llm-log-analyzer) — standalone Python module, original implementation
-- [log-validate](https://github.com/dr11m/log-validate-skill) — deductive approach, code-aware validation via grep
 
 ## Использование скила
 
@@ -120,3 +115,7 @@ README.en.md                    # English version
 
 Полная история версий, дерево веток, прогоны и проблемы — в [CHANGELOG.md](CHANGELOG.md).
 
+## Связанные проекты
+
+- [llm-log-analyzer](https://github.com/dr11m/llm-log-analyzer) — standalone Python-модуль, оригинальная реализация
+- [log-validate](https://github.com/dr11m/log-validate-skill) — дедуктивный подход, code-aware валидация через grep

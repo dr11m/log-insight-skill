@@ -6,6 +6,12 @@ This repository contains the complete development lifecycle of the skill: from i
 
 > The idea evolved from [llm-log-analyzer](https://github.com/dr11m/llm-log-analyzer) — a Python script that used LLM for log analysis. The skill brings this idea to Claude Code/Copilot, adding parallelization via sub-agents and cross-chunk trend analysis.
 
+> The skill uses an inductive approach. Comparison with deductive [log-validate](https://github.com/dr11m/log-validate-skill): log-insight reads the entire log with agents, log-validate builds a map from code and validates via grep.
+
+## Approach Philosophy
+
+**Inductive inference.** The model receives log text as-is and draws conclusions about problems based on project documentation. No predefined patterns — the model is free in formulating conclusions. It determines what is an anomaly by comparing what it sees with expected behavior from docs. Can detect logical violations, event inconsistencies, and business rule violations that were not anticipated in advance.
+
 ## What the skill does
 
 The skill analyzes log files of any size by splitting them into chunks and distributing the analysis across multiple parallel agents. Each agent audits its own chunk, then the orchestrator collects results, detects cross-chunk trends and anomalies, and generates a final report.
@@ -102,6 +108,11 @@ README.en.md                    # English version
 /record-run sonnet, project X, 5 chunks, SUCCESS, 45 commands
 /record-run opus, project Y, FAILED. Problems: agent read log directly
 ```
+
+## Related Projects
+
+- [llm-log-analyzer](https://github.com/dr11m/llm-log-analyzer) — standalone Python module, original implementation
+- [log-validate](https://github.com/dr11m/log-validate-skill) — deductive approach, code-aware validation via grep
 
 ## CHANGELOG
 
