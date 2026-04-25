@@ -1,0 +1,4 @@
+interface:
+  display_name: "Log Insight"
+  short_description: "Chunked log analysis with sub-agents"
+  default_prompt: "Use $log-insight to analyze logs with --path logs/app.log --context 256 --chunks 7."
