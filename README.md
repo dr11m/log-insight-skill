@@ -1,4 +1,5 @@
 # log-insight
+статья про эти скилы - https://t.me/agentic_madness/5
 
 [English version](README.en.md) · [История версий](CHANGELOG.md)
 
